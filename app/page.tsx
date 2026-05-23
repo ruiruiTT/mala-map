@@ -65,10 +65,14 @@ useEffect(() => {
     );
 
     // ✅ 更新当前选中
-    setSelected((prev: any) => ({
-      ...prev,
-      visited: !prev.visited
-    }));
+    setSelected((prev: any) => {
+      if (!prev) return prev;
+
+      return {
+        ...prev,
+        visited: !prev.visited
+      };
+    });
   };
 
   return (
@@ -80,7 +84,7 @@ useEffect(() => {
       >
         {markers.map((marker, index) => (
           <Marker
-            key={index}
+            key={marker.id}
             position={{ lat: marker.lat, lng: marker.lng }}
             onClick={() => setSelected(marker)}
             icon={{
