@@ -1,9 +1,15 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, addDoc, getDocs, query, where } from "firebase/firestore";
-import XLSX from "xlsx";
+import {
+  addDoc,
+  collection,
+  getDocs,
+  getFirestore,
+  query,
+  where,
+} from "firebase/firestore";
 import path from "path";
+import XLSX from "xlsx";
 
-// 🔥 你的 Firebase 配置
 const firebaseConfig = {
   apiKey: "AIzaSyCC_rCR54i6BfO1ZnlNpcUOXPpskeenStM",
   authDomain: "maratan-map.firebaseapp.com",
@@ -13,31 +19,30 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// 📥 读取 Excel
-const filePath = path.resolve("shops.xlsx"); // 文件放项目根目录
+const filePath = path.resolve("shops.xlsx");
 const workbook = XLSX.readFile(filePath);
 const sheetName = workbook.SheetNames[0];
 const sheet = workbook.Sheets[sheetName];
-
-// 转 JSON
 const shops = XLSX.utils.sheet_to_json(sheet);
 
-// 🔍 去重检查
 async function shopExists(name) {
-  const q = query(collection(db, "shops"), where("name", "==", name));
+  const q = query(
+    collection(db, "shops"),
+    where("name", "==", name)
+  );
   const snapshot = await getDocs(q);
+
   return !snapshot.empty;
 }
 
-// 🚀 导入
 async function importData() {
-  console.log("开始导入 Excel 数据...");
+  console.log("Excel データのインポートを開始します...");
 
   for (const shop of shops) {
     const exists = await shopExists(shop.name);
 
     if (exists) {
-      console.log("跳过（已存在）:", shop.name);
+      console.log("スキップしました（既に存在）:", shop.name);
       continue;
     }
 
@@ -45,13 +50,13 @@ async function importData() {
       name: shop.name,
       lat: Number(shop.lat),
       lng: Number(shop.lng),
-      visited: false
+      visited: false,
     });
 
-    console.log("已添加:", shop.name);
+    console.log("追加しました:", shop.name);
   }
 
-  console.log("全部导入完成！");
+  console.log("すべてのインポートが完了しました");
 }
 
 importData();

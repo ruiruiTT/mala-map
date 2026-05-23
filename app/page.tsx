@@ -2,21 +2,19 @@
 
 import {
   GoogleMap,
+  InfoWindow,
   LoadScript,
   Marker,
-  InfoWindow,
 } from "@react-google-maps/api";
-
-import { useState, useEffect } from "react";
-
-import { db } from "../lib/firebase";
-
+import { useEffect, useState } from "react";
 import {
   collection,
-  getDocs,
   doc,
+  getDocs,
   updateDoc,
 } from "firebase/firestore";
+
+import { db } from "../lib/firebase";
 
 const containerStyle = {
   width: "100%",
@@ -39,73 +37,77 @@ type Shop = {
 export default function Home() {
   const [markers, setMarkers] = useState<Shop[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-
   const [isMobile, setIsMobile] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // ✅ 当前选中的店铺
   const selected =
-    markers.find((m) => m.id === selectedId) || null;
+    markers.find((marker) => marker.id === selectedId) || null;
 
-  // 📱 判断手机
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
 
     checkMobile();
-
     window.addEventListener("resize", checkMobile);
 
-    return () =>
+    return () => {
       window.removeEventListener("resize", checkMobile);
+    };
   }, []);
 
-  // 📦 读取数据
   useEffect(() => {
     async function fetchData() {
-      const querySnapshot = await getDocs(
-        collection(db, "shops")
-      );
+      const querySnapshot = await getDocs(collection(db, "shops"));
 
-      const data = querySnapshot.docs.map((docItem) => ({
-        id: docItem.id,
-        visited: false,
-        ...docItem.data(),
-      })) as Shop[];
+      const data = querySnapshot.docs
+        .map((docItem) => {
+          const shop = docItem.data();
+
+          return {
+            id: docItem.id,
+            name: String(shop.name ?? ""),
+            lat: Number(shop.lat),
+            lng: Number(shop.lng),
+            visited: Boolean(shop.visited),
+          };
+        })
+        .filter(
+          (shop) =>
+            shop.name &&
+            Number.isFinite(shop.lat) &&
+            Number.isFinite(shop.lng)
+        );
 
       setMarkers(data);
-
       setIsLoaded(true);
     }
 
     fetchData();
   }, []);
 
-  // 🔥 切换 visited
   const toggleVisited = async () => {
     if (!selected) return;
 
+    const nextVisited = !selected.visited;
     const ref = doc(db, "shops", selected.id);
 
     await updateDoc(ref, {
-      visited: !selected.visited,
+      visited: nextVisited,
     });
 
-    // ✅ 更新 UI
     setMarkers((prev) =>
-      prev.map((m) =>
-        m.id === selected.id
+      prev.map((marker) =>
+        marker.id === selected.id
           ? {
-              ...m,
-              visited: !m.visited,
+              ...marker,
+              visited: nextVisited,
             }
-          : m
+          : marker
       )
     );
   };
 
-  // 🚨 SSR 防崩
   if (!isLoaded) return null;
 
   return (
@@ -119,7 +121,6 @@ export default function Home() {
         center={center}
         zoom={12}
       >
-        {/* 📍 Marker */}
         {markers.map((marker) => (
           <Marker
             key={marker.id}
@@ -136,7 +137,6 @@ export default function Home() {
           />
         ))}
 
-        {/* 💻 PC InfoWindow */}
         {!isMobile && selected && (
           <InfoWindow
             position={{
@@ -157,38 +157,39 @@ export default function Home() {
 
               <button
                 onClick={toggleVisited}
-                className="bg-orange-500 text-white px-2 py-1 mt-2 rounded"
+                className="mt-2 rounded bg-orange-500 px-2 py-1 text-white"
+                type="button"
               >
                 {selected.visited
-                  ? "食べた ✔"
-                  : "食べ済みにマークする"}
+                  ? "食べてないに戻す"
+                  : "食べたにマークする"}
               </button>
             </div>
           </InfoWindow>
         )}
 
-        {/* 📱 手机 Bottom Sheet */}
         {isMobile && selected && (
-          <div className="fixed bottom-0 left-0 w-full bg-white shadow-lg p-4 rounded-t-2xl z-50">
-            {/* 小横条 */}
-            <div className="w-10 h-1 bg-gray-300 rounded mx-auto mb-2"></div>
+          <div className="fixed bottom-0 left-0 z-50 w-full rounded-t-2xl bg-white p-4 shadow-lg">
+            <div className="mx-auto mb-2 h-1 w-10 rounded bg-gray-300" />
 
-            <h2 className="text-lg font-bold">
+            <h2 className="text-lg font-bold text-gray-900">
               {selected.name}
             </h2>
 
             <button
               onClick={toggleVisited}
-              className="bg-orange-500 text-white px-3 py-2 mt-3 rounded w-full"
+              className="mt-3 w-full rounded bg-orange-500 px-3 py-2 text-white"
+              type="button"
             >
               {selected.visited
-                ? "食べた ✔"
-                : "食べ済みにマークする"}
+                ? "食べてないに戻す"
+                : "食べたにマークする"}
             </button>
 
             <button
               onClick={() => setSelectedId(null)}
-              className="mt-2 text-gray-500 text-sm w-full"
+              className="mt-2 w-full text-sm text-gray-500"
+              type="button"
             >
               close
             </button>
