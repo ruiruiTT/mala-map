@@ -72,7 +72,7 @@ useEffect(() => {
   };
 
   return (
-    <LoadScript googleMapsApiKey="AIzaSyC8RkT0_bkdAoITwc8_qDoG2JkSWZePGt4">
+    <LoadScript googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}>
       <GoogleMap
         mapContainerStyle={containerStyle}
         center={center}
