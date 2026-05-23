@@ -65,7 +65,7 @@ useEffect(() => {
     );
 
     // ✅ 更新当前选中
-    setSelected(prev => ({
+    setSelected((prev: any) => ({
       ...prev,
       visited: !prev.visited
     }));
