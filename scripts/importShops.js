@@ -45,6 +45,7 @@ async function importData() {
       name: shop.name,
       lat: Number(shop.lat),
       lng: Number(shop.lng),
+      visited: false
     });
 
     console.log("已添加:", shop.name);
